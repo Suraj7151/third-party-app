@@ -11,6 +11,7 @@ Route::post('/proceed', [UserController::class, 'proceed'])->name('proceed');
 
 Route::get('/showDashboard', [UserController::class, 'showDashboard'])->name('showDashboard'); // Dashboard page
 Route::get('/account', [UserController::class, 'account'])->name('account');
+Route::post('/process-payment', [USerController::class, 'processPayment'])->name('processPayment');
 
-Route::post('/proceedDeposit', [UserController::class, 'proceedDeposit'])->name('proceedDeposit');
+Route::post('/submitDeposit', [UserController::class, 'submitDeposit'])->name('submitDeposit');
 Route::post('/proceedWithdrawal', [UserController::class, 'proceedWithdrawal'])->name('proceedWithdrawal');

@@ -41,7 +41,7 @@
                             <!-- Image Upload Input (Initially Hidden) -->
                             <div id="imageInput{{ $account['id'] }}" class="mt-2 col-4" style="display: none">
                                 <label for="depositImage{{ $account['id'] }}" class="form-label">Upload Deposit Image</label>
-                                <input type="file" class="form-control" id="depositImage{{ $account['id'] }}" name="deposit_image" accept="image/*">
+                                <input type="file" class="form-control" id="depositImage{{ $account['id'] }}" name="deposit_image" accept="image/jpeg, image/png">
                             </div>
                         </div>
                     @endforeach
@@ -184,7 +184,17 @@
                 console.error('Error completing payment:', error);
                 alert('Error completing payment');
             });
-        }); 
+        });
+        document.getElementById('depositImage{{ $account['id'] }}').addEventListener('change', function() {
+        var file = this.files[0]; // Get the selected file
+        if (file) {
+            var maxSize = 2 * 1024 * 1024; // 2 MB in bytes
+            if (file.size > maxSize) {
+                alert('The file size must be less than 2 MB.');
+                this.value = ''; // Clear the input if file is too large
+            }
+        }
+        });
     });
 </script>
 

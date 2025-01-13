@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -49,23 +51,46 @@ class UserController extends Controller
     // Show the user dashboard with their data
     public function showDashboard(Request $request)
     {
-        // Retrieve the user data based on the user_id
-        $user_id = $request->input('user_id');
+        // // Retrieve the user data based on the user_id
+        // $user_id = $request->input('user_id');
+        // $user = DB::table('user')->where('user_id', $user_id)->first();
+
+        // // Check if the user exists
+        // if (!$user) {
+        //     return redirect('/')->with('error', 'User not found!');
+        // }
+
+        // // Pass the user data to the view
+        // $transactions = DB::table('transaction_log')
+        //     ->where('user_id', $user->user_id)
+        //     ->orderBy('created_at', 'desc')
+        //     ->paginate(6)
+        //     ->appends(['user_id' => $user_id]); // Append user_id to pagination links
+
+        // return view('dashboard', ['user' => $user, 'transactions' => $transactions]);
+
+        // Retrieve the user_id either from the request or Authenticated user
+        $user_id = $request->input('user_id') ?? Auth::user()->user_id;
+
+        // Find the user in the 'user' table
         $user = DB::table('user')->where('user_id', $user_id)->first();
 
-        // Check if the user exists
         if (!$user) {
             return redirect('/')->with('error', 'User not found!');
         }
 
-        // Pass the user data to the view
+        // Retrieve transactions for the user
         $transactions = DB::table('transaction_log')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user_id)
             ->orderBy('created_at', 'desc')
             ->paginate(6)
             ->appends(['user_id' => $user_id]); // Append user_id to pagination links
 
-        return view('dashboard', ['user' => $user, 'transactions' => $transactions]);
+        // Pass user and transactions data to the dashboard view
+        return view('dashboard', [
+            'user' => $user,
+            'transactions' => $transactions,
+        ]);
     }
 
     public function account(Request $request){
@@ -187,7 +212,9 @@ class UserController extends Controller
             'transaction_id' => $request->input('transaction_id'),
             'selected_account' => $request->input('selected_account')
         ]);
-
+        $request->validate([
+            'deposit_image' => 'required|mimes:jpeg,png,jpg|max:2048',
+        ]);
         // Get the transaction ID and selected account from the form
         $transactionId = $request->input('transaction_id');
         $selectedAccount = $request->input('selected_account');
@@ -228,9 +255,16 @@ class UserController extends Controller
             ];
 
             // If image is uploaded, include the image path (or base64 encoded image) in the API request
-            if ($imagePath) {
-                $paymentData['file'] = url('storage/' . $imagePath); // Use the URL of the uploaded image
-                
+            if ($image) {
+                // Read the image content as base64
+                $imageContents = file_get_contents($image->getRealPath());
+                $base64Image = base64_encode($imageContents);
+                $mimeType = $image->getMimeType(); // Get the image MIME type
+
+                // Include the base64 encoded image with the MIME type
+                $paymentData['file'] = 'data:' . $mimeType . ';base64,' . $base64Image;
+                // Log the file data for debugging
+                Log::info('file:', ['file' => $paymentData['file']]);
             }
             $response = Http::post('https://astro.itnbusiness.com/pay/client/completeTransaction', $paymentData);
 
@@ -286,6 +320,16 @@ class UserController extends Controller
     public function proceedWithdrawal(Request $request){
         $user = DB::table('user')->where('user_id', $request->input('user_id'))->first();
 
+        // Check if withdrawal amount is greater than available balance
+        if ($user && $request->input('withdrawal_amount') > $user->total_balance) {
+            // Log and return error if withdrawal amount exceeds balance
+            Log::warning('Withdrawal amount exceeds available balance', [
+                'user_id' => $request->input('user_id'),
+                'available_balance' => $user->total_balance,
+                'requested_amount' => $request->input('withdrawal_amount')
+            ]);
+            return back()->withErrors(['error' => 'The withdrawal amount exceeds your available balance.']);
+        }
         // Ensure that the user has sufficient balance for the withdrawal
         if ($user && $user->total_balance >= $request->input('withdrawal_amount')) {
             try {
@@ -330,7 +374,28 @@ class UserController extends Controller
             }   
         }
 
-        return back()->withErrors(['Insufficient balance' => 'Insufficient balance for this withdrawal.']);
+        return back()->withErrors(['error' => 'Insufficient balance for this withdrawal.']);
     }
 
+    public function updatePassword(Request $request)
+    {
+        // Validate the inputs
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:4|confirmed',
+        ]);
+
+        // Check if the current password is correct
+        if (!Hash::check($request->input('current_password'), Auth::user()->password)) {
+            return back()->withErrors(['current_password' => 'The current password is incorrect']);
+        }
+
+        // Update the password
+        Auth::user()->update([
+            'password' => Hash::make($request->input('new_password')),
+        ]);
+
+        // Redirect with a success message
+        return redirect()->route('showDashboard')->with('success', 'Password updated successfully');
+    }
 }

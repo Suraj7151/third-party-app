@@ -42,3 +42,5 @@ Route::get('/password/updateForm', function(){
     return view('update_password');
 });
 Route::put('/password/update', [UserController::class, 'updatePassword'])->name('password.update');
+
+Route::post('/raise-ticket', [UserController::class, 'raiseTicket'])->name('raiseTicket');

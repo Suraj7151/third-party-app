@@ -10,174 +10,9 @@
             <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
             <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 
             @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-            <style>
-                body {
-                    font-family: 'Nunito', sans-serif;
-                    background-color: #f4f7fc;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                .mainContainer {
-                    margin: 50px 50px;
-                    max-width: 1450px;
-                }
-
-                .dashboard-card {
-                    margin-bottom: 10px;
-                    border-radius: 15px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }
-
-                .user-icon {
-                    font-size: 40px;
-                    color: #007bff;
-                }
-
-                .card-body {
-                    text-align: center;
-                    padding: 10px ;
-                }
-
-                .card-title {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                }
-
-                .card-text {
-                    font-size: 1.25rem;
-                    font-weight: 500;
-                }
-                .userDetails{
-                    margin: 0 50px;
-                }
-                .balance-card {
-                    background-color: #007bff;
-                    color: white;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                    border-radius: 15px;
-                }
-
-
-                .balance-card p {
-                    font-size: 1.25rem;
-                    font-weight: 500;
-                }
-                
-                .transaction-card{
-                    height: fit-content;
-                    /* border: 1px solid black; */
-                    box-shadow: 0 4px 8px rgba(50, 50, 50, 0.1); 
-                    border-radius: 8px;
-                }
-                .type{
-                    padding: 5px !important;
-                }
-                .amount{
-                    color: #4F7A94;
-                }
-                .table-responsive {
-                    margin-top: 20px;
-                }
-
-                .table {
-                    background-color: white;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                }
-
-                .table th, .table td {
-                    padding: 8px 5px;
-                    text-align: center;
-                }
-
-                .table thead {
-                    background-color: #007bff;
-                    color: white;
-                }
-
-                .table-striped tbody tr:nth-of-type(odd) {
-                    background-color: #f9f9f9;
-                }
-
-                @media (max-width: 768px) {
-                    .user-icon {
-                        font-size: 30px;
-                    }
-                    .mainContainer {
-                        margin: 10px 10px;
-                        /* max-width: 1450px; */
-                    }
-                    .userDetails{
-                        margin: 0 10px;
-                    }
-                    .user-details {
-                        display: flex; /* Enables flexbox */
-                        justify-content: center; /* Centers horizontally */
-                        align-items: center; /* Centers vertically */
-                    }
-                    
-                    .user-details .btn-danger {
-                        margin: 0 auto; /* Ensures the button stays centered */
-                    }
-                    .user-card{
-                        width: 150px;
-                        margin-bottom: 0px !important;
-                    }
-                    .btn-parent{
-                        /* justify-content: start !important; */
-                        width: fit-content;
-                    }
-                    .card-title {
-                        font-size: 1.25rem;
-                    }
-                    .card-text {
-                        font-size: 1rem;
-                    }
-
-                    .balance-card h5 {
-                        font-size: 1.5rem;
-                    }
-
-                    .balance-card p {
-                        font-size: 1.25rem;
-                    }
-                    .transaction-card {
-                        /* align-items: flex-end !important; Align items to the left */
-                        /* gap: 10px; Add space between stacked items */
-                        padding: 10px; 
-                    }
-
-                    .transaction-card img {
-                        margin-bottom: 5px; /* Add space below the image */
-                    }
-
-                    .transaction-col {
-                        width: 100% !important; /* Take full width on smaller screens */
-                    }
-
-                    /* .transaction-card .d-flex {
-                        flex-direction: row;
-                    } */
-                    .table {
-                    font-size: 0.9rem;
-                    }
-
-                    .table th, .table td {
-                        padding: 0.5rem;
-                    }
-
-                    /* You can adjust the font size and padding for smaller screens */
-                    .user-info, .transaction-info {
-                        font-size: 0.9rem;
-                    }
-                    
-                }
-            </style>
         </head>
         <body class="antialiased">
             
@@ -205,7 +40,7 @@
                             <div class="card dashboard-card ">
                                 <div class="card-body d-flex align-items-center gap-3 justify-content-center">
                                     <h3 class="card-title"><i class="fas fa-user user-icon"></i></h3>
-                                    <p class="card-text">{{ $user->user_id }}</p>
+                                    <p class="card-text">{{ $authenticatedUser->name }}</p>
                                 </div>
                             </div>
                         </div>
@@ -307,17 +142,23 @@
                                     @endif
                                 </div>
                                 <div class="d-flex flex-column gap-0">
-                                    <p class="fw-semibold pb-0 m-0  ">₹ {{$transaction->amount}}</p>
-                                    <p class="fw-light m-0 amount">{{\Carbon\Carbon::parse($transaction->created_at)->setTimezone('Asia/Kolkata')->format('d M Y h:i A')}}</p>
+                                    <p class="fw-semibold pb-0 m-0 text-lg">₹ {{$transaction->amount}}</p>
+                                    <p class="fw-light m-0 amount text-xs">{{\Carbon\Carbon::parse($transaction->created_at)->setTimezone('Asia/Kolkata')->format('d M Y h:i A')}}</p>
                                 </div>
                             </div>
-                            <div style="color: 
-                                @if($transaction->status === 'Pending') orange 
-                                @elseif($transaction->status === 'Success') green 
-                                @elseif($transaction->status === 'Failure') red 
-                                @elseif($transaction->status === 'Initiated') blue 
-                                @endif;" class='fw-bold'>
-                                {{$transaction->status}}
+                            <div class="d-flex justify-content-center flex-column align-items-center">
+                                <div style="color: 
+                                    @if($transaction->status === 'Pending') orange 
+                                    @elseif($transaction->status === 'Success') green 
+                                    @elseif($transaction->status === 'Failure') red 
+                                    @elseif($transaction->status === 'Initiated') blue 
+                                    @endif;" class='fw-bold'>
+                                    <h1 class="h4">{{$transaction->status}}</h1>
+                                </div>
+                                <div class="d-flex gap-4">
+                                    <button class="help-btn" data-order-id="{{ $transaction->order_id }}">Raise Ticket</button>
+                                    <button>Status</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -385,8 +226,99 @@
                 </div>
             </div>
             
+            {{-- Ticket Create Window Starts --}}
+            <div class="ticket-window" id="ticketWindow">
+                <div class="ticket-window-header">
+                    Support Ticket
+                </div>
+                <div class="ticket-window-body">
+                    <form method="POST" action="{{ route('raiseTicket') }}" id="ticketForm" enctype="multipart/form-data">
+                        @csrf
+                        <label for="order_id" class="mb-2 fw-bold">Order ID :</label>
+                        <input type="text" id="order_id" name="order_id" readonly>
+                        
+                        <label for="issue_type" class="mb-2 mt-2 fw-bold">Select an Issue:</label>
+                        <select id="issue_type" name="issue_type" class="p-1 rounded-lg">
+                            <option value="">Select an Issue</option>
+                            <option value="Payment Failed">Payment Failed</option>
+                            <option value="Payment Not Reflected">Payment Not Reflected</option>
+                            <option value="Transaction Pending">Transaction Pending</option>
+                            <option value="Duplicate Payment">Duplicate Payment</option>
+                            <option value="Other">Other</option>
+                        </select>
+
+                        <label for="query" class="mt-3 mb-2 fw-bold">Describe your issue:</label>
+
+                        <textarea id="query" name="query" placeholder="Describe your issue..." cols="5" rows="3"></textarea>
+            
+                        <label for="screenshot" class="mt-2">Attach Screenshot (optional):</label>
+
+                        <input type="file" id="ticket_image" name="ticket_image" class="ticket-input mt-2" accept="image/jpeg, image/png">
+                        <span id="fileName"></span>
+                        <input type="hidden" name="user_id" value={{$user->user_id}}>
+
+                        <div class="ticket-window-footer d-flex justify-content-center gap-3">
+                            <button type="submit" class="btn btn-primary" id="submitTicket">Submit</button>
+                            <button type="button" class="btn btn-secondary" id="closeTicket">Close</button>
+                        </div>
+                    </form>
+                </div>
+               
+            </div>
+            {{-- Ticket Create Window Ends --}}
+
+            {{-- Ticket Status Window Starts --}}
+            <div class="ticket-status-window" id="ticketStatusWindow">
+                <div class="ticket-status-header" id="ticketStatusHeader">
+                    Ticket Status
+                </div>
+
+                <div class="ticket-status-body">
+                    
+                </div>
+            </div>
+            {{-- Ticket Status Window Ends --}}
+
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
             {{-- <script type="module" src="{{ asset('js/app.js') }}" defer></script> --}}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Get elements
+                    const helpButtons = document.querySelectorAll('.help-btn');
+                    const ticketWindow = document.getElementById('ticketWindow');
+                    const orderIdField = document.getElementById('order_id');
+                    const closeBtn = document.getElementById('closeTicket');
+                    const submitBtn = document.getElementById('submitTicket');
+                    
+                    // Handle help button clicks
+                    helpButtons.forEach(button => {
+                        button.addEventListener('click', function () {
+                            const orderId = this.getAttribute('data-order-id');
+                            orderIdField.value = orderId; // Set the order_id field
+                            ticketWindow.style.display = 'block'; // Show the ticket window
+                        });
+                    });
+            
+                    // Handle closing the ticket window
+                    closeBtn.addEventListener('click', function () {
+                        ticketWindow.style.display = 'none'; // Hide the ticket window
+                    });
+            
+                    // // Handle ticket submission (you can replace this with an actual AJAX request)
+                    // submitBtn.addEventListener('click', function () {
+                    //     const query = document.getElementById('query').value;
+                    //     if (query.trim()) {
+                    //         // Submit the form via AJAX or redirect to the support route
+                    //         console.log('Order ID:', orderIdField.value);
+                    //         console.log('Query:', query);
+                    //         // Close the window after submitting
+                    //         ticketWindow.style.display = 'none';
+                    //     } else {
+                    //         alert('Please describe your issue.');
+                    //     }
+                    // });
+                });
+            </script>
         </body>
     </html>

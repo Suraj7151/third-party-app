@@ -31,7 +31,7 @@ class UserController extends Controller
         if (!$user) {
             DB::table('user')->insert([
                 'user_id' => $request->input('user_id'),
-                'total_balance' => 0, // Defaults are set in the database schema
+                'total_balance' => 0,
                 'deposit' => 0,
                 'withdrawal' => 0,
                 'created_at' => now(),
@@ -45,32 +45,15 @@ class UserController extends Controller
         }
 
         // Proceed to the next page (for example, the user dashboard)
-        return redirect()->route('showDashboard', ['user_id' => $request->input('user_id')]); // Change this route to the actual next page route
+        return redirect()->route('showDashboard', ['user_id' => $request->input('user_id')]); 
     }
 
     // Show the user dashboard with their data
     public function showDashboard(Request $request)
     {
-        // // Retrieve the user data based on the user_id
-        // $user_id = $request->input('user_id');
-        // $user = DB::table('user')->where('user_id', $user_id)->first();
-
-        // // Check if the user exists
-        // if (!$user) {
-        //     return redirect('/')->with('error', 'User not found!');
-        // }
-
-        // // Pass the user data to the view
-        // $transactions = DB::table('transaction_log')
-        //     ->where('user_id', $user->user_id)
-        //     ->orderBy('created_at', 'desc')
-        //     ->paginate(6)
-        //     ->appends(['user_id' => $user_id]); // Append user_id to pagination links
-
-        // return view('dashboard', ['user' => $user, 'transactions' => $transactions]);
-
         // Retrieve the user_id either from the request or Authenticated user
-        $user_id = $request->input('user_id') ?? Auth::user()->user_id;
+        $authenticatedUser = Auth::user();
+        $user_id = $authenticatedUser->id;
 
         // Find the user in the 'user' table
         $user = DB::table('user')->where('user_id', $user_id)->first();
@@ -86,8 +69,10 @@ class UserController extends Controller
             ->paginate(6)
             ->appends(['user_id' => $user_id]); // Append user_id to pagination links
 
+        
         // Pass user and transactions data to the dashboard view
         return view('dashboard', [
+            'authenticatedUser' => $authenticatedUser,
             'user' => $user,
             'transactions' => $transactions,
         ]);
@@ -397,5 +382,92 @@ class UserController extends Controller
 
         // Redirect with a success message
         return redirect()->route('showDashboard')->with('success', 'Password updated successfully');
+    }
+
+    public function raiseTicket(Request $request){
+        $request->validate([
+            'ticket_image' => 'required|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $userId = $request->input('user_id');
+        $orderId = $request->input('order_id');
+        $subject = $request->input('issue_type');
+        $comments = $request->input('query');
+        $image = $request->file('ticket_image');
+
+        $imagePath = null;
+
+        if($image){
+            // Store the image in the 'public/deposits' directory and get the file path
+            $imagePath = $image->store('deposits', 'public');
+            Log::info('Image uploaded', ['image_path' => $imagePath]);
+        }
+
+        try {
+            $ticketData = [
+                'userid' => $userId,
+                'orderid' => $orderId,
+                'subject' => $subject,
+                'comments' => $comments,
+            ];
+            // If image is uploaded, include the image path (or base64 encoded image) in the API request
+            if ($image) {
+                // Read the image content as base64
+                $imageContents = file_get_contents($image->getRealPath());
+                $base64Image = base64_encode($imageContents);
+                $mimeType = $image->getMimeType(); // Get the image MIME type
+
+                // Include the base64 encoded image with the MIME type
+                $ticketData['upload'] = 'data:' . $mimeType . ';base64,' . $base64Image;
+                // Log the file data for debugging
+                // Log::info('upload:', ['upload' => $ticketData['upload']]);
+            }
+            $response = Http::post('https://astro.itnbusiness.com/pay/support/raiseTicket', $ticketData);
+            Log::info('Response Body:', ['body' => $response->body()]);
+            // Log the response for debugging
+            Log::info('Raise Ticket API response', ['response' => $response->json()]);
+
+            // Check if the request was successful
+            $apiResponse = $response->json();
+
+            if (isset($apiResponse['status']) && $apiResponse['status'] === 'success') {
+                // Log and return success if the payment was processed successfully
+                Log::info('Ticket raised successfully');
+                 // Flash success message to session
+                session()->flash('success', 'Your ticket has been raised.');
+
+                // Check if the request is an AJAX request or not
+                if ($request->ajax()) {
+                    return response()->json(['success' => true, 'message' => $apiResponse['message']]);
+                } else {
+                    // If it's not an AJAX request, redirect to the dashboard
+                    return redirect()->route('showDashboard', ['user_id' => $userId])
+                        ->with('success', 'Your ticket has been raised.');
+                }
+            } else {
+                // Log and return failure if the payment was not processed correctly
+                Log::error('API request failed with status:', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers()
+                ]);
+                
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Failed to raise ticket']);
+                } else {
+                    return redirect()->route('showDashboard', ['user_id' => $userId])
+                        ->with('error', 'Failed to raise ticket');
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error calling payment API', ['error' => $e->getMessage()]);
+            
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error calling complete payment API']);
+            } else {
+                return redirect()->route('showDashboard', ['user_id' => $userId])
+                    ->with('error', 'Error calling complete payment API');
+            }
+        }
     }
 }
